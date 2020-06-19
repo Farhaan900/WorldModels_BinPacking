@@ -1,0 +1,7 @@
+record*
+log*
+.idea
+.ipynb_checkpoints
+__pycache__
+series
+tf_*
