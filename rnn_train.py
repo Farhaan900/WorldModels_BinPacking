@@ -73,8 +73,8 @@ N_data = len(data_mu)  # should be 10k
 batch_size = hps_model.batch_size
 
 # save 1000 initial mu and logvars:
-initial_mu = np.copy(data_mu[:1000, 0, :] * 1000).astype(np.int).tolist()
-initial_logvar = np.copy(data_logvar[:1000, 0, :] * 1000).astype(np.int).tolist()
+initial_mu = np.copy(data_mu[:1000, 0, :] * 10000).astype(np.int).tolist()
+initial_logvar = np.copy(data_logvar[:1000, 0, :] * 10000).astype(np.int).tolist()
 with open(os.path.join("tf_initial_z", "initial_z.json"), 'wt') as outfile:
     json.dump([initial_mu, initial_logvar], outfile, sort_keys=True, indent=0, separators=(',', ': '))
 

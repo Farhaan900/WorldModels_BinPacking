@@ -55,7 +55,7 @@ kl_tolerance=0.5
 
 filelist = os.listdir(DATA_DIR)
 filelist.sort()
-filelist = filelist[0:1000]
+filelist = filelist[0:10000]
 
 dataset, action_dataset = load_raw_data_list(filelist)
 

@@ -44,7 +44,7 @@ def count_length_of_filelist(filelist):
     return total_length
 
 
-def create_dataset(filelist, N=1000, M=1000):  # N is 10000 episodes, M is number of timesteps
+def create_dataset(filelist, N=10000, M=1000):  # N is 10000 episodes, M is number of timesteps
     data = np.zeros((M * N, 64, 64, 3), dtype=np.uint8)
     idx = 0
     for i in range(N):
@@ -68,7 +68,7 @@ def create_dataset(filelist, N=1000, M=1000):  # N is 10000 episodes, M is numbe
 # load dataset from record/*. only use first 10K, sorted by filename.
 filelist = os.listdir(DATA_DIR)
 filelist.sort()
-filelist = filelist[0:1000]
+filelist = filelist[0:10000]
 # print("check total number of images:", count_length_of_filelist(filelist))
 dataset = create_dataset(filelist)
 
