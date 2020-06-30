@@ -1,5 +1,5 @@
 record*
-log*
+log *
 .idea
 .ipynb_checkpoints
 __pycache__
