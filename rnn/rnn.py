@@ -322,8 +322,8 @@ def rnn_output(state, z, mode):
   if mode == MODE_ZC:
     return np.concatenate([z, state.c[0]])
   if mode == MODE_ZH:
-    print("RNN STATE: ", state.h[0])
-    print("RNN Z: ",z)
+    # print("RNN STATE: ", state.h[0])
+    # print("RNN Z: ",z)
     return np.concatenate([z, state.h[0]])
   return z # MODE_Z or MODE_Z_HIDDEN
 
