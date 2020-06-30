@@ -353,7 +353,7 @@ class BinPacking2DMaskGymEnvironment(BinPackingNearActionGymEnvironment):
         max_color_num = 255
         part_size = 7
         encoding_multiplier = int(max_color_num / part_size)
-        print(encoding_multiplier)
+        # print(encoding_multiplier)
 
         bins = state[:-1]
 
