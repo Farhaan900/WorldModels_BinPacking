@@ -124,7 +124,7 @@ class Model:
         # print(action)
 
         action_mean = np.mean(action)
-        action_mean = action_mean * 62
+        action_mean = action_mean * 29 # FIND ME setting 29 as bin size is 30
         action = np.array([int(action_mean)])
 
         # action[1] = (action[1] + 1.0) / 2.0
