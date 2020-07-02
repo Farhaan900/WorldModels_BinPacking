@@ -301,7 +301,8 @@ class BinPackingNearActionGymEnvironment(BinPackingGymEnvironment):
         elif action == 0:  # new bag
             return True
         elif self.num_bins_levels[action] == 0:
-            print('cannot insert item because bin of this level does not exist')
+            # print('cannot insert item because bin of this level does not exist')
+            print ('!no ins!')
             return False
         else:  # insert in existing bag
             return True
