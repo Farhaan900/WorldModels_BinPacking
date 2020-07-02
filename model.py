@@ -132,7 +132,7 @@ class Model:
 
         # action = np.array([int(action[2])])
 
-        print("action", action)
+        #print("action", action)
 
         self.state = rnn_next_state(self.rnn, z, action, self.state)
 
