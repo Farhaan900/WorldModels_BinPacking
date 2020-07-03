@@ -1,5 +1,6 @@
 import numpy as np
 import random
+import math
 
 import json
 import sys
@@ -125,7 +126,12 @@ class Model:
 
         action_mean = np.mean(action)
         action_mean = action_mean * 29 # FIND ME setting 29 as bin size is 30
-        action = np.array([int(action_mean)])
+
+        if math.isnan(action_mean):
+            print("NaN produced")
+            action = np.array([0])
+        else:
+            action = np.array([int(action_mean)])
 
         # action[1] = (action[1] + 1.0) / 2.0
         # action[2] = clip(action[2])
