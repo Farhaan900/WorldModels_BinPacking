@@ -301,7 +301,7 @@ class BinPackingNearActionGymEnvironment(BinPackingGymEnvironment):
         elif action == 0:  # new bag
             return True
         elif self.num_bins_levels[action] == 0:
-            # print('cannot insert item because bin of this level does not exist')
+            print('cannot insert item because bin of this level does not exist')
             #print ('!no ins!')
             return False
         else:  # insert in existing bag
@@ -322,61 +322,6 @@ class BinPackingContinuousActionEnv(BinPackingNearActionGymEnvironment):
         action = int(action * (self.bag_capacity - 1))
         return super().step(action)
 
-class BinPacking2DMaskGymEnvironment(BinPackingNearActionGymEnvironment):
-    def __init__(self, env_config={}):
-
-        env_config_forced = {
-            "bag_capacity": 30,
-            'item_sizes': [1, 2, 3, 4, 5, 6, 7, 8, 9],
-            # 'item_probabilities': [0.14, 0.10, 0.06, 0.13, 0.11, 0.13, 0.03, 0.11, 0.19], #bounded waste
-            'item_probabilities': [0.06, 0.11, 0.11, 0.22, 0, 0.11, 0.06, 0, 0.33],  # perfect pack
-            #                  'item_probabilities': [0, 0, 0, 1/3, 0, 0, 0, 0, 2/3], #linear waste
-            'time_horizon': 1000,  # 10000
-        }
-        super().__init__(env_config_forced)
-
-
-    def reset(self):
-        state = super().reset()
-        obs = self.bin_to_pic_encoder(state)
-        return obs
-
-    def step(self, action):
-        state, rew, done, info = super().step(action[0])
-
-        obs = self.bin_to_pic_encoder(state)
-        return obs, rew, done, info
-
-    def bin_to_pic_encoder(self, state):
-
-        item_codes = [[100, 100, 0], [100, 0, 100], [100, 0, 0], [0, 100, 100], [0, 100, 0], [0, 0, 100], [200, 200, 0],
-                      [200, 0, 200], [200, 0, 0], [0, 200, 200], [0, 200, 0], [0, 0, 200]]
-        max_color_num = 255
-        part_size = 7
-        encoding_multiplier = int(max_color_num / part_size)
-        # print(encoding_multiplier)
-
-        bins = state[:-1]
-
-        encoded_img = np.zeros([64, 64, 3], dtype=int)
-        for idx, x in enumerate(bins):
-            idx = idx * 2
-            idy = 0
-            while x >= part_size:
-                encoded_img[idx][idy] = part_size * encoding_multiplier
-                encoded_img[idx + 1][idy] = part_size * encoding_multiplier
-                # print(x)
-                x = int(x - part_size)
-                # print(x)
-                # print()
-                idy += 1
-
-            encoded_img[idx][idy] = x * encoding_multiplier
-            encoded_img[idx + 1][idy] = x * encoding_multiplier
-
-            encoded_img[60:64] = item_codes[state[len(state) - 1]]
-
-        return encoded_img
 
 class BinPackingActionMaskGymEnvironment(BinPackingNearActionGymEnvironment):
     def __init__(self, env_config={}):
@@ -414,7 +359,7 @@ class BinPackingActionMaskGymEnvironment(BinPackingNearActionGymEnvironment):
         return obs
 
     def step(self, action):
-        state, rew, done, info = super().step(action[0])
+        state, rew, done, info = super().step(action)
         valid_actions = self.__get_valid_actions()
         self.action_mask = [1 if x in valid_actions else 0 for x in range(self.action_space.n)]
 
@@ -448,6 +393,65 @@ class BinPackingActionMaskGymEnvironment(BinPackingNearActionGymEnvironment):
         valid_actions.append(0)  # open new bag
         #print("Valid actions "+str(valid_actions))
         return valid_actions
+
+
+class BinPacking2DMaskGymEnvironment(BinPackingActionMaskGymEnvironment):
+    def __init__(self, env_config={}):
+
+        env_config_forced = {
+            "bag_capacity": 30,
+            'item_sizes': [1, 2, 3, 4, 5, 6, 7, 8, 9],
+            # 'item_probabilities': [0.14, 0.10, 0.06, 0.13, 0.11, 0.13, 0.03, 0.11, 0.19], #bounded waste
+            'item_probabilities': [0.06, 0.11, 0.11, 0.22, 0, 0.11, 0.06, 0, 0.33],  # perfect pack
+            #                  'item_probabilities': [0, 0, 0, 1/3, 0, 0, 0, 0, 2/3], #linear waste
+            'time_horizon': 1000,  # 10000
+        }
+        super().__init__(env_config_forced)
+
+
+    def reset(self):
+        obs = super().reset()
+        obs["real_obs"] = self.bin_to_pic_encoder(obs["real_obs"])
+        return obs
+
+    def step(self, action):
+
+        print(action)
+        obs, rew, done, info = super().step(action[0])
+
+        obs["real_obs"] = self.bin_to_pic_encoder(obs["real_obs"])
+        return obs, rew, done, info
+
+    def bin_to_pic_encoder(self, state):
+
+        item_codes = [[100, 100, 0], [100, 0, 100], [100, 0, 0], [0, 100, 100], [0, 100, 0], [0, 0, 100], [200, 200, 0],
+                      [200, 0, 200], [200, 0, 0], [0, 200, 200], [0, 200, 0], [0, 0, 200]]
+        max_color_num = 255
+        part_size = 7
+        encoding_multiplier = int(max_color_num / part_size)
+        # print(encoding_multiplier)
+
+        bins = state[:-1]
+
+        encoded_img = np.zeros([64, 64, 3], dtype=int)
+        for idx, x in enumerate(bins):
+            idx = idx * 2
+            idy = 0
+            while x >= part_size:
+                encoded_img[idx][idy] = part_size * encoding_multiplier
+                encoded_img[idx + 1][idy] = part_size * encoding_multiplier
+                # print(x)
+                x = int(x - part_size)
+                # print(x)
+                # print()
+                idy += 1
+
+            encoded_img[idx][idy] = x * encoding_multiplier
+            encoded_img[idx + 1][idy] = x * encoding_multiplier
+
+            encoded_img[60:64] = item_codes[state[len(state) - 1]]
+
+        return encoded_img
 
 
 if __name__ == '__main__':
