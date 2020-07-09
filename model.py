@@ -77,13 +77,13 @@ class Model:
             self.hidden_size = 40
             self.weight_hidden = np.random.randn(self.input_size, self.hidden_size)
             self.bias_hidden = np.random.randn(self.hidden_size)
-            self.weight_output = np.random.randn(self.hidden_size, 3)
-            self.bias_output = np.random.randn(3)
-            self.param_count = ((self.input_size + 1) * self.hidden_size) + (self.hidden_size * 3 + 3)
+            self.weight_output = np.random.randn(self.hidden_size, 30) # TODO : change to 30
+            self.bias_output = np.random.randn(30) # TODO : change to 30
+            self.param_count = ((self.input_size + 1) * self.hidden_size) + (self.hidden_size * 30 + 30) # TODO : change to 30 * 30
         else:
-            self.weight = np.random.randn(self.input_size, 3)
-            self.bias = np.random.randn(3)
-            self.param_count = (self.input_size) * 3 + 3
+            self.weight = np.random.randn(self.input_size, 30) # TODO : change to 30
+            self.bias = np.random.randn(30) # TODO : change to 30
+            self.param_count = (self.input_size) * 30 + 30 # TODO : change to 30
 
         self.render_mode = False
 
@@ -105,9 +105,10 @@ class Model:
         z = mu + np.exp(logvar / 2.0) * np.random.randn(*s)
         return z, mu, logvar
 
-    def get_action(self, z):
+    def get_action(self, z, mask ): # TODO
         h = rnn_output(self.state, z, EXP_MODE)
 
+        h = relu(h)
         '''
         action = np.dot(h, self.weight) + self.bias
         action[0] = np.tanh(action[0])
@@ -119,26 +120,54 @@ class Model:
             h = np.tanh(np.dot(h, self.weight_hidden) + self.bias_hidden)
             action = np.tanh(np.dot(h, self.weight_output) + self.bias_output)
         else:
-            action = sigmoid(np.dot(h, self.weight) + self.bias)
+            action = clip(np.dot(h, self.weight) + self.bias, 0, 10)
+            #action = softmax(np.dot(h, self.weight) + self.bias)
+            #sigmoid(np.dot(h, self.weight) + self.bias)
+
+
+        for i in range (len(mask)):
+             if mask[i] == 0 :
+                 action[i] = np.NINF
+
+
+        # print(action)
+        # print(mask)
+
+        action = softmax(action)
+
+        # action = np.array(action) / np.sum(np.array(action))
+        xp = action
+
+            # [x,y,z]
         # action = sigmoid(h)
         # print(np.mean(action))
         # print(action)
 
-        action_mean = np.mean(action)
-        action_mean = action_mean * 29 # FIND ME setting 29 as bin size is 30
+        #action_mean = np.mean(action)
+        #action_mean = action_mean * 28 # FIND ME setting 28 as bin size is 30
 
-        if math.isnan(action_mean):
-            print("NaN produced")
-            action = np.array([0])
-        else:
-            action = np.array([int(action_mean)])
+        action = np.array(random.choices(range(30), weights=(action), k=1))
+        #action = np.array(np.where(max(action)))
+
+
+        # if math.isnan(action):
+        #     print("NaN produced")
+        #     action = np.array([0])
+        # else:
+        #     action = np.array([int(action_mean)])
 
         # action[1] = (action[1] + 1.0) / 2.0
         # action[2] = clip(action[2])
 
         # action = np.array([int(action[2])])
 
-        #print("action", action)
+        printable = {
+            'action' : action,
+            'set': xp,
+            'mask': mask
+        }
+        # print("action", action, xp, mask, "END")
+        print(printable)
 
         self.state = rnn_next_state(self.rnn, z, action, self.state)
 
@@ -152,11 +181,11 @@ class Model:
             params_2 = params[cut_off:]
             self.bias_hidden = params_1[:self.hidden_size]
             self.weight_hidden = params_1[self.hidden_size:].reshape(self.input_size, self.hidden_size)
-            self.bias_output = params_2[:3]
-            self.weight_output = params_2[3:].reshape(self.hidden_size, 3)
+            self.bias_output = params_2[:30]
+            self.weight_output = params_2[30:].reshape(self.hidden_size, 30)
         else:
-            self.bias = np.array(model_params[:3])
-            self.weight = np.array(model_params[3:]).reshape(self.input_size, 3)
+            self.bias = np.array(model_params[:30])
+            self.weight = np.array(model_params[30:]).reshape(self.input_size, 30)
 
     def load_model(self, filename):
         with open(filename) as f:
@@ -193,7 +222,7 @@ def simulate(model, train_mode=False, render_mode=True, num_episode=5, seed=-1, 
     if (seed >= 0):
         random.seed(seed)
         np.random.seed(seed)
-        model.env.seed(seed)
+        model.env.seed(seed) # TODO
 
     for episode in range(num_episode):
 
@@ -201,6 +230,8 @@ def simulate(model, train_mode=False, render_mode=True, num_episode=5, seed=-1, 
 
         obs = model.env.reset()
 
+        mask = obs['action_mask']
+        obs = obs['real_obs']
         total_reward = 0.0
 
         random_generated_int = np.random.randint(2 ** 31 - 1)
@@ -219,13 +250,18 @@ def simulate(model, train_mode=False, render_mode=True, num_episode=5, seed=-1, 
                 model.env.render('rgb_array')
 
             z, mu, logvar = model.encode_obs(obs)
-            action = model.get_action(z)
+            action = model.get_action(z, mask)
 
             recording_mu.append(mu)
             recording_logvar.append(logvar)
             recording_action.append(action)
 
-            obs, reward, done, info = model.env.step(action)
+            obs, reward, done, info = model.env.step(action) # TODO
+            rewardPrint = "Reward " + str(reward)
+            print(rewardPrint)
+
+            mask = obs['action_mask']
+            obs = obs['real_obs']
 
             extra_reward = 0.0  # penalize for turning too frequently
             if train_mode and penalize_turning:
@@ -244,7 +280,7 @@ def simulate(model, train_mode=False, render_mode=True, num_episode=5, seed=-1, 
 
         # for recording:
         z, mu, logvar = model.encode_obs(obs)
-        action = model.get_action(z)
+        action = model.get_action(z, mask)
         recording_mu.append(mu)
         recording_logvar.append(logvar)
         recording_action.append(action)

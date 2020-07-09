@@ -102,9 +102,9 @@ def initialize_settings(sigma_init=0.1, sigma_decay=0.9999):
       sigma_decay=sigma_decay,
       sigma_alpha=0.20,
       sigma_limit=0.02,
-      learning_rate=0.01,
+      learning_rate=0.001,
       learning_rate_decay=1.0,
-      learning_rate_limit=0.01,
+      learning_rate_limit=0.0001,
       weight_decay=0.005,
       popsize=population)
     es = pepg
@@ -113,7 +113,7 @@ def initialize_settings(sigma_init=0.1, sigma_decay=0.9999):
       sigma_init=sigma_init,
       sigma_decay=sigma_decay,
       sigma_limit=0.02,
-      learning_rate=0.01,
+      learning_rate=0.001,
       learning_rate_decay=1.0,
       learning_rate_limit=0.01,
       antithetic=antithetic,
@@ -434,7 +434,7 @@ if __name__ == "__main__":
   parser = argparse.ArgumentParser(description=('Train policy on OpenAI Gym environment '
                                                 'using pepg, ses, openes, ga, cma'))
   
-  parser.add_argument('-o', '--optimizer', type=str, help='ses, pepg, openes, ga, cma.', default='cma')
+  parser.add_argument('-o', '--optimizer', type=str, help='ses, pepg, openes, ga, cma.', default='pepg')
   parser.add_argument('--num_episode', type=int, default=16, help='num episodes per trial')
   parser.add_argument('--eval_steps', type=int, default=25, help='evaluate every eval_steps step')
   parser.add_argument('-n', '--num_worker', type=int, default=56)
