@@ -107,7 +107,7 @@ class Model:
 
     def get_action(self, z, mask ): # TODO
         h = rnn_output(self.state, z, EXP_MODE)
-
+        sp = self.state
         h = relu(h)
         '''
         action = np.dot(h, self.weight) + self.bias
@@ -120,7 +120,8 @@ class Model:
             h = np.tanh(np.dot(h, self.weight_hidden) + self.bias_hidden)
             action = np.tanh(np.dot(h, self.weight_output) + self.bias_output)
         else:
-            action = clip(np.dot(h, self.weight) + self.bias, 0, 10)
+
+            action = np.tanh(np.dot(h, self.weight) + self.bias)
             #action = softmax(np.dot(h, self.weight) + self.bias)
             #sigmoid(np.dot(h, self.weight) + self.bias)
 
@@ -135,8 +136,13 @@ class Model:
 
         action = softmax(action)
 
-        # action = np.array(action) / np.sum(np.array(action))
         xp = action
+
+        action = np.array(random.choices(range(30), weights=(action), k=1))
+
+        # action = np.array(action) / np.sum(np.array(action))
+
+
 
             # [x,y,z]
         # action = sigmoid(h)
@@ -146,7 +152,6 @@ class Model:
         #action_mean = np.mean(action)
         #action_mean = action_mean * 28 # FIND ME setting 28 as bin size is 30
 
-        action = np.array(random.choices(range(30), weights=(action), k=1))
         #action = np.array(np.where(max(action)))
 
 
@@ -163,6 +168,7 @@ class Model:
 
         printable = {
             'action' : action,
+            # 'state': sp,
             'set': xp,
             'mask': mask
         }
