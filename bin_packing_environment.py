@@ -416,7 +416,6 @@ class BinPacking2DMaskGymEnvironment(BinPackingActionMaskGymEnvironment):
 
     def step(self, action):
 
-        print(action)
         obs, rew, done, info = super().step(action[0])
 
         obs["real_obs"] = self.bin_to_pic_encoder(obs["real_obs"])
