@@ -25,7 +25,7 @@ class BinPackingGymEnvironment(gym.Env):
         'render.modes': ['human', 'rgb_array'],
         }
         self.viewer = None
-        self.should_render=True
+        self.should_render=False
         if self.record:
             DIR_NAME = 'record'
             if not os.path.exists(DIR_NAME):
@@ -355,7 +355,7 @@ class BinPacking2DMaskGymEnvironment(BinPackingGymEnvironment):#BinPackingNearAc
             # 'item_probabilities': [0.14, 0.10, 0.06, 0.13, 0.11, 0.13, 0.03, 0.11, 0.19], #bounded waste
             'item_probabilities': [0.06, 0.11, 0.11, 0.22, 0, 0.11, 0.06, 0, 0.33],  # perfect pack
             #                  'item_probabilities': [0, 0, 0, 1/3, 0, 0, 0, 0, 2/3], #linear waste
-            'time_horizon': 15000,  # 10000
+            'time_horizon': 1000,  # 10000
         }
         super().__init__(env_config_forced)
 
