@@ -11,14 +11,26 @@ ACTION:
 Choose bag
 """
 
-BIG_NEG_REWARD = -70
-BIG_POS_REWARD = 100
-
-
+BIG_NEG_REWARD = -100
+BIG_POS_REWARD = 10
+import random
+import os
+from PIL import Image
+import rendering
 class BinPackingGymEnvironment(gym.Env):
 
     def __init__(self, env_config={}):
-
+        self.record=False
+        metadata = {  # Feel free to add anything useful here
+        'render.modes': ['human', 'rgb_array'],
+        }
+        self.viewer = None
+        self.should_render=True
+        if self.record:
+            DIR_NAME = 'record'
+            if not os.path.exists(DIR_NAME):
+                os.makedirs(DIR_NAME)
+        
         config_defaults = {
             'bag_capacity': 9,#Or 99,
             'item_sizes': [2,3], #[1, 2, 3, 4, 5, 6, 7, 8, 9],
@@ -45,8 +57,21 @@ class BinPackingGymEnvironment(gym.Env):
         # actions: select a bag from the different levels possible
         self.action_space = spaces.Discrete(self.bag_capacity)
         self.env=self
+   
+    def _render(self, mode='human', close=False):
+        pass
 
     def reset(self):
+        
+        
+        if self.record:
+            DIR_NAME = 'record'
+            random_generated_int = random.randint(0, 2 ** 31 - 1)
+            self.filename = DIR_NAME + "/" + str(random_generated_int) + ".npz"
+            self.recording_obs = []
+            self.recording_action = []
+        
+
         self.time_remaining = self.time_horizon
         self.item_size = self.__get_item()
         self.num_full_bags = 0
@@ -182,7 +207,7 @@ class BinPackingGymEnvironment(gym.Env):
         return " ".join(parts)
 
     def render(self, mode="human", close=False):
-        pass
+        self._render()
 
 
 class BinPackingIncrementalWasteGymEnvironment(BinPackingGymEnvironment):
@@ -302,7 +327,6 @@ class BinPackingNearActionGymEnvironment(BinPackingGymEnvironment):
             return True
         elif self.num_bins_levels[action] == 0:
             print('cannot insert item because bin of this level does not exist')
-            #print ('!no ins!')
             return False
         else:  # insert in existing bag
             return True
@@ -322,6 +346,103 @@ class BinPackingContinuousActionEnv(BinPackingNearActionGymEnvironment):
         action = int(action * (self.bag_capacity - 1))
         return super().step(action)
 
+class BinPacking2DMaskGymEnvironment(BinPackingGymEnvironment):#BinPackingNearActionGymEnvironment):
+    def __init__(self, env_config={}):
+
+        env_config_forced = {
+            "bag_capacity": 30,
+            'item_sizes': [1, 2, 3, 4, 5, 6, 7, 8, 9],
+            # 'item_probabilities': [0.14, 0.10, 0.06, 0.13, 0.11, 0.13, 0.03, 0.11, 0.19], #bounded waste
+            'item_probabilities': [0.06, 0.11, 0.11, 0.22, 0, 0.11, 0.06, 0, 0.33],  # perfect pack
+            #                  'item_probabilities': [0, 0, 0, 1/3, 0, 0, 0, 0, 2/3], #linear waste
+            'time_horizon': 15000,  # 10000
+        }
+        super().__init__(env_config_forced)
+
+
+    def reset(self):
+        state = super().reset()
+        obs = self.bin_to_pic_encoder(state)
+        if self.record:
+            self.recording_obs.append(obs)
+        return obs
+
+    def step(self, action):
+        if self.record:
+            self.recording_action.append(action)
+        state, rew, done, info = super().step(action)
+
+        obs = self.bin_to_pic_encoder(state)
+        if self.record:
+            if not done:
+                self.recording_obs.append(obs)
+            if done:
+                #print("We done here.")
+                self.recording_obs = np.array(self.recording_obs, dtype=np.uint8)
+                self.recording_action = np.array(self.recording_action, dtype=np.uint8)
+                np.savez_compressed(self.filename, obs=self.recording_obs, action=self.recording_action)
+        
+        return obs, rew, done, state
+    def _render(self, mode='human', close=False):
+        if self.should_render:
+            if close:
+                if self.viewer is not None:
+                    self.viewer.close()
+                    self.viewer = None
+                    return
+            screen_width = 1200
+            screen_height = 800
+            if self.viewer is None:  # This only happens in the first run
+                self.viewer = rendering.SimpleImageViewer(maxwidth=800)
+            vis= self.bin_to_pic_encoder(self.num_bins_levels + [self.item_size])
+            #vis = Image.fromarray(vis.astype('uint8'), 'RGB')
+            #vis = vis.resize((1200,800), Image.ANTIALIAS)
+#vis.save('image.png')
+            #vis = rendering.Image('image.png', 0, 0)
+            #self.viewer.add_geom(vis)
+            return self.viewer.imshow(vis.astype('uint8'))#return_rgb_array=mode == 'rgb_array')
+        pass
+
+    def close(self):
+        if self.viewer:
+            self.viewer.close()
+            self.viewer = None
+
+    def bin_to_pic_encoder(self, state):
+
+        item_codes = [(0.9440215301806998, 0.9685659361783929, 0.9921261053440984), (0.9194156093810073, 0.9528181468665897, 0.9842522106881968), (0.8948096885813149, 0.9370703575547865, 0.9763783160322953), (0.8672664359861592, 0.9193540945790081, 0.967520184544406), (0.8436447520184545, 0.9036063052672049, 0.9596462898885044), (0.8200230680507498, 0.8878585159554018, 0.9517723952326028), (0.7964013840830451, 0.8721107266435986, 0.9438985005767013), (0.7653979238754326, 0.8541176470588235, 0.9333794694348327), (0.7260284505959247, 0.8373856209150327, 0.919600153787005), (0.6866589773164169, 0.8206535947712418, 0.9058208381391772), (0.647289504036909, 0.803921568627451, 0.8920415224913495), (0.5984313725490196, 0.7805305651672433, 0.8777854671280276), (0.548235294117647, 0.7529719338715878, 0.866958861976163), (0.4980392156862745, 0.7254133025759324, 0.8561322568242984), (0.447843137254902, 0.6978546712802769, 0.8453056516724337), (0.3969088811995388, 0.6668512110726644, 0.8303575547866207), (0.3565551710880431, 0.6392925797770088, 0.8146097654748174), (0.31620146097654767, 0.6117339484813534, 0.7988619761630142), (0.2758477508650519, 0.5841753171856978, 0.783114186851211), (0.23598615916955018, 0.5497116493656286, 0.7647058823529412), (0.2035063437139562, 0.5172318339100346, 0.7479738562091504), (0.17102652825836218, 0.4847520184544406, 0.7312418300653595), (0.13854671280276817, 0.4522722029988466, 0.7145098039215687), (0.10865051903114188, 0.41656286043829294, 0.689042675893887), (0.08404459823144944, 0.38506728181468663, 0.6644367550941945), (0.059438677431757014, 0.35357170319108033, 0.6398308342945022), (0.03483275663206459, 0.32207612456747403, 0.6152249134948098), (0.03137254901960784, 0.28567474048442904, 0.5642906574394464), (0.03137254901960784, 0.25319492502883506, 0.5160630526720492), (0.03137254901960784, 0.22071510957324106, 0.46783544790465204)]
+        item_codes.reverse()
+#[[100, 100, 0], [100, 0, 100], [100, 0, 0], [0, 100, 100], [0, 100, 0], [0, 0, 100], [200, 200, 0],
+                     # [200, 0, 200], [200, 0, 0], [0, 200, 200], [0, 200, 0], [0, 0, 200]]
+        max_color_num = 255
+        part_size = 7
+        encoding_multiplier = int(max_color_num / part_size)
+        #print(encoding_multiplier)
+
+        bins = state[:-1]
+
+        encoded_img = np.zeros([64, 64, 3], dtype=np.uint8)
+        for idx, x in enumerate(bins):
+            lower_bound=60-(idx*2)
+            start_pos=0
+            while x >= 29:
+                x-=15
+                encoded_img[lower_bound-2][start_pos:start_pos+2]=tuple(int(255*a) for a in item_codes[29])
+                encoded_img[lower_bound-1][start_pos:start_pos+2]=tuple(int(255*a) for a in item_codes[29])
+                encoded_img[lower_bound][start_pos:start_pos+2]=tuple(int(255*a) for a in item_codes[29])
+                start_pos+=2
+            if x>0:
+                encoded_img[lower_bound-2][start_pos:start_pos+2]=tuple(int(255*a) for a in item_codes[x])
+                encoded_img[lower_bound-1][start_pos:start_pos+2]=tuple(int(255*a) for a in item_codes[x])
+                encoded_img[lower_bound][start_pos:start_pos+2]=tuple(int(255*a) for a in item_codes[x])
+            #print("Down: "+str((x,idx,idy)))
+        start_pos=6*state[len(state) - 1]
+        encoded_img[60][start_pos:start_pos+6] = tuple(int(255*a) for a in item_codes[state[len(state) - 1]])
+        encoded_img[61][start_pos:start_pos+6] = tuple(int(255*a) for a in item_codes[state[len(state) - 1]])
+        encoded_img[62][start_pos:start_pos+6] = tuple(int(255*a) for a in item_codes[state[len(state) - 1]])
+        encoded_img[63][start_pos:start_pos+6] = tuple(int(255*a) for a in item_codes[state[len(state) - 1]])
+        #print(encoded_img)
+        return encoded_img
 
 class BinPackingActionMaskGymEnvironment(BinPackingNearActionGymEnvironment):
     def __init__(self, env_config={}):
@@ -395,82 +516,35 @@ class BinPackingActionMaskGymEnvironment(BinPackingNearActionGymEnvironment):
         return valid_actions
 
 
-class BinPacking2DMaskGymEnvironment(BinPackingActionMaskGymEnvironment):
-    def __init__(self, env_config={}):
-
-        env_config_forced = {
-            "bag_capacity": 30,
-            'item_sizes': [1, 2, 3, 4, 5, 6, 7, 8, 9],
-            # 'item_probabilities': [0.14, 0.10, 0.06, 0.13, 0.11, 0.13, 0.03, 0.11, 0.19], #bounded waste
-            'item_probabilities': [0.06, 0.11, 0.11, 0.22, 0, 0.11, 0.06, 0, 0.33],  # perfect pack
-            #                  'item_probabilities': [0, 0, 0, 1/3, 0, 0, 0, 0, 2/3], #linear waste
-            'time_horizon': 1000,  # 10000
-        }
-        super().__init__(env_config_forced)
-
-
-    def reset(self):
-        obs = super().reset()
-        obs["real_obs"] = self.bin_to_pic_encoder(obs["real_obs"])
-        return obs
-
-    def step(self, action):
-
-        obs, rew, done, info = super().step(action[0])
-
-        obs["real_obs"] = self.bin_to_pic_encoder(obs["real_obs"])
-        return obs, rew, done, info
-
-    def bin_to_pic_encoder(self, state):
-
-        item_codes = [[100, 100, 0], [100, 0, 100], [100, 0, 0], [0, 100, 100], [0, 100, 0], [0, 0, 100], [200, 200, 0],
-                      [200, 0, 200], [200, 0, 0], [0, 200, 200], [0, 200, 0], [0, 0, 200]]
-        max_color_num = 255
-        part_size = 7
-        encoding_multiplier = int(max_color_num / part_size)
-        # print(encoding_multiplier)
-
-        bins = state[:-1]
-
-        encoded_img = np.zeros([64, 64, 3], dtype=int)
-        for idx, x in enumerate(bins):
-            idx = idx * 2
-            idy = 0
-            while x >= part_size:
-                encoded_img[idx][idy] = part_size * encoding_multiplier
-                encoded_img[idx + 1][idy] = part_size * encoding_multiplier
-                # print(x)
-                x = int(x - part_size)
-                # print(x)
-                # print()
-                idy += 1
-
-            encoded_img[idx][idy] = x * encoding_multiplier
-            encoded_img[idx + 1][idy] = x * encoding_multiplier
-
-            encoded_img[60:64] = item_codes[state[len(state) - 1]]
-
-        return encoded_img
-
-
 if __name__ == '__main__':
     env_config = {
-        "bag_capacity": 100,
+        "bag_capacity": 30,
         'item_sizes': [1, 2, 3, 4, 5, 6, 7, 8, 9],
-        'item_probabilities': [0, 0, 0, 1 / 3, 0, 0, 0, 0, 2 / 3],  # linear waste
+        #'item_probabilities': [0, 0, 0, 1 / 3, 0, 0, 0, 0, 2 / 3],  # linear waste
         # 'item_probabilities': [0.14, 0.10, 0.06, 0.13, 0.11, 0.13, 0.03, 0.11, 0.19], #bounded waste
-        # 'item_probabilities': [0.06, 0.11, 0.11, 0.22, 0, 0.11, 0.06, 0, 0.33], #perfect pack
-        'time_horizon': 10000,
+        'item_probabilities': [0.06, 0.11, 0.11, 0.22, 0, 0.11, 0.06, 0, 0.33], #perfect pack
+        'time_horizon': 1000,
     }
 
-    env = BinPackingActionMaskGymEnvironment(env_config)
-    initial_state = env.reset()
+    env = BinPacking2DMaskGymEnvironment(env_config)
+    state = env.reset()
     done = False
     count = 0
     total_reward = 0
     while not done:
-        action = env.action_space.sample()
-        next_state, reward, done, _ = env.step(action)
+        text = input("Action: ") 
+        action = int(text)
+        state, reward, done, st = env.step(action)
+        #for i in state:
+        #    for j in i:
+        #        print(j)
+        
+        #print(st)
+        print(reward)
+        env.render(close=False)
+        #img = Image.fromarray(state.astype('uint8'), 'RGB')
+        #img.show()
+   
         total_reward += reward
         print("Action: {0}, Reward: {1:.1f}, Done: {2}"
               .format(action, reward, done))
