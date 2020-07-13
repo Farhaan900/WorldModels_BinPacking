@@ -1,0 +1,32 @@
+# Hyperparameters follow Hessel et al. (2018).
+import dopamine.agents.dqn.dqn_agent
+import dopamine.agents.rainbow.rainbow_agent
+import dopamine.discrete_domains.gym_lib
+import dopamine.discrete_domains.run_experiment
+import dopamine.replay_memory.prioritized_replay_buffer
+import gin.tf.external_configurables
+import components.our_network
+ParametricRainbowAgent.observation_shape = (64,64,3)
+#We could also make the size (100,1)
+ParametricRainbowAgent.stack_size =1
+ParametricRainbowAgent.min_replay_history = 500
+ParametricRainbowAgent.update_period = 4
+ParametricRainbowAgent.target_update_period = 2000
+ParametricRainbowAgent.epsilon_train = 0.01
+ParametricRainbowAgent.epsilon_eval = 0.0
+ParametricRainbowAgent.epsilon_decay_period = 250000  # agent steps
+ParametricRainbowAgent.replay_scheme = 'prioritized'
+ParametricRainbowAgent.tf_device = '/gpu:0'  # use '/cpu:*' for non-GPU version
+ParametricRainbowAgent.optimizer = @tf.train.AdamOptimizer()
+
+create_gym_environment.environment_name = 'BinPackingEnv'
+create_gym_environment.version = 'v0'
+create_parametric_agent.agent_name = 'parametric_rainbow'
+Runner.create_environment_fn = @gym_lib.create_gym_environment
+CheckpointRunner.num_iterations = 10
+CheckpointRunner.training_steps = 9000
+CheckpointRunner.evaluation_steps = 1000
+CheckpointRunner.max_steps_per_episode = 1000  # Default max episode length.
+
+WrappedPrioritizedReplayBuffer.replay_capacity = 50000
+WrappedPrioritizedReplayBuffer.batch_size = 32
