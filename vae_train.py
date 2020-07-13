@@ -24,7 +24,7 @@ kl_tolerance = 0.5
 # Parameters for training
 NUM_EPOCH = 10
 DATA_DIR = "record"
-
+NUM_RECORDINGS=10
 model_save_path = "tf_vae"
 if not os.path.exists(model_save_path):
     os.makedirs(model_save_path)
@@ -44,7 +44,7 @@ def count_length_of_filelist(filelist):
     return total_length
 
 
-def create_dataset(filelist, N=10000, M=1000):  # N is 10000 episodes, M is number of timesteps
+def create_dataset(filelist, N=NUM_RECORDINGS, M=1000):  # N is 10000 episodes, M is number of timesteps
     data = np.zeros((M * N, 64, 64, 3), dtype=np.uint8)
     idx = 0
     for i in range(N):
@@ -68,7 +68,7 @@ def create_dataset(filelist, N=10000, M=1000):  # N is 10000 episodes, M is numb
 # load dataset from record/*. only use first 10K, sorted by filename.
 filelist = os.listdir(DATA_DIR)
 filelist.sort()
-filelist = filelist[0:10000]
+filelist = filelist[0:NUM_RECORDINGS]
 # print("check total number of images:", count_length_of_filelist(filelist))
 dataset = create_dataset(filelist)
 
