@@ -26,6 +26,7 @@ class BinPackingGymEnvironment(gym.Env):
         }
         self.viewer = None
         self.should_render=False
+        self.readytotrainwmmodel=True
         if self.record:
             DIR_NAME = 'record'
             if not os.path.exists(DIR_NAME):
@@ -359,18 +360,65 @@ class BinPacking2DMaskGymEnvironment(BinPackingGymEnvironment):#BinPackingNearAc
         }
         super().__init__(env_config_forced)
 
+        if self.readytotrainwmmodel:
+            self.observation_space = spaces.Dict({
+            # a mask of valid actions (e.g., [0, 0, 1, 0, 0, 1] for 6 max avail)
+            "action_mask": spaces.Box(
+                0,
+                1,
+                shape=(self.action_space.n,)),
+            "real_obs": self.observation_space
+            })
 
     def reset(self):
         state = super().reset()
-        obs = self.bin_to_pic_encoder(state)
+ 
         if self.record:
             self.recording_obs.append(obs)
+       
+        valid_actions = self.__get_valid_actions()
+        self.action_mask = [1 if x in valid_actions else 0 for x in range(self.action_space.n)]
+        # obs=np.zeros([64, 64, 3], dtype=int) # old 2D version
+        # obs[0][0][0] = np.array(state)
+        mask = np.append(np.array(self.action_mask), 0)
+        # print("mask len : ", len(mask))
+        '''
+        # old 2D version
+        xid = 0
+        for y in np.array(state):
+            obs[0][xid] = y
+            # print(xid)
+            obs[1][xid] = mask[xid]
+            xid += 1
+        '''
+        obs=self.bin_to_pic_encoder(state)
+        if self.readytotrainwmmodel:    
+            obs = {
+            "action_mask": np.array(self.action_mask),
+            "real_obs": np.array(obs),
+            }
         return obs
-
+ 
     def step(self, action):
         if self.record:
             self.recording_action.append(action)
         state, rew, done, info = super().step(action)
+        valid_actions = self.__get_valid_actions()
+        self.action_mask = [1 if x in valid_actions else 0 for x in range(self.action_space.n)]
+        # obs = np.zeros([64, 64, 3], dtype=int)   # old 2D version
+        # obs[0] = np.array(state)
+        # obs[1] = np.array(self.action_mask)
+        # obs = np.zeros([64, 64, 3])
+        # obs[0][0][0] = np.array(state)
+        mask = np.append(np.array(self.action_mask), 0)
+
+        ''' old 2D version 
+        xid = 0
+        for y in np.array(state):
+            obs[0][xid] = y
+            obs[1][xid] = mask[xid]
+            xid += 1
+        '''
 
         obs = self.bin_to_pic_encoder(state)
         if self.record:
@@ -381,8 +429,13 @@ class BinPacking2DMaskGymEnvironment(BinPackingGymEnvironment):#BinPackingNearAc
                 self.recording_obs = np.array(self.recording_obs, dtype=np.uint8)
                 self.recording_action = np.array(self.recording_action, dtype=np.uint8)
                 np.savez_compressed(self.filename, obs=self.recording_obs, action=self.recording_action)
-        
+        if self.readytotrainwmmodel: 
+            obs = {
+            "action_mask": np.array(self.action_mask),
+            "real_obs": np.array(obs),
+            }
         return obs, rew, done, state
+
     def _render(self, mode='human', close=False):
         if self.should_render:
             if close:
@@ -443,6 +496,17 @@ class BinPacking2DMaskGymEnvironment(BinPackingGymEnvironment):#BinPackingNearAc
         encoded_img[63][start_pos:start_pos+6] = tuple(int(255*a) for a in item_codes[state[len(state) - 1]])
         #print(encoded_img)
         return encoded_img
+
+    def __get_valid_actions(self):
+        valid_actions = list()
+        # get bin levels for which bins exist and item will fit
+        for x in range(1, self.action_space.n):
+            if self.num_bins_levels[x] > 0:
+                if x <= (self.bag_capacity - self.item_size):
+                    valid_actions.append(x)
+        valid_actions.append(0)  # open new bag
+        #print("Valid actions "+str(valid_actions))
+        return valid_actions
 
 class BinPackingActionMaskGymEnvironment(BinPackingNearActionGymEnvironment):
     def __init__(self, env_config={}):
