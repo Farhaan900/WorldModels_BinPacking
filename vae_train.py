@@ -24,7 +24,7 @@ kl_tolerance = 0.5
 # Parameters for training
 NUM_EPOCH = 10
 DATA_DIR = "record"
-NUM_RECORDINGS=10
+NUM_RECORDINGS=10000
 model_save_path = "tf_vae"
 if not os.path.exists(model_save_path):
     os.makedirs(model_save_path)
