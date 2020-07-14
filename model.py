@@ -200,6 +200,15 @@ class Model:
         self.data = data
         model_params = np.array(data[0])  # assuming other stuff is in data
         self.set_model_params(model_params)
+    
+    def save_model(self, filename="model_output.json"):#Works for EXP_MODE != MODE_Z_HIDDEN
+        model_params=[]
+        for i in self.bias:
+            model_params.append(i)
+        for i in self.weight.reshape(self.input_size*30):
+            model_params.append(i)
+        with open(filename, 'w') as outfile:
+            json.dump([model_params,["Extra"]], outfile)
 
     def get_random_model_params(self, stdev=0.1):
         # return np.random.randn(self.param_count)*stdev

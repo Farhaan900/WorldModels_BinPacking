@@ -351,6 +351,7 @@ def master():
             reward = es_solution[1]  # best reward
             curr_reward = es_solution[2]  # best of the current batch
             model.set_model_params(np.array(model_params).round(4))
+            #model.save_model() This would allow you to save the model, for reloading....
 
             r_max = int(np.max(reward_list) * 100) / 100.
             r_min = int(np.min(reward_list) * 100) / 100.
