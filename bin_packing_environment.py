@@ -21,7 +21,7 @@ import time
 class BinPackingGymEnvironment(gym.Env):
 
     def __init__(self, env_config={}):
-        self.record=False
+        self.record=True
         metadata = {  # Feel free to add anything useful here
         'render.modes': ['human', 'rgb_array'],
         }
@@ -30,7 +30,7 @@ class BinPackingGymEnvironment(gym.Env):
         self.min_sleep=1
         self.max_sleep=3
         self.should_render=False
-        self.readytotrainwmmodel=True
+        self.readytotrainwmmodel=False
         if self.record:
             DIR_NAME = 'record'
             if not os.path.exists(DIR_NAME):
@@ -376,9 +376,6 @@ class BinPacking2DMaskGymEnvironment(BinPackingGymEnvironment):#BinPackingNearAc
 
     def reset(self):
         state = super().reset()
- 
-        if self.record:
-            self.recording_obs.append(obs)
        
         valid_actions = self.__get_valid_actions()
         self.action_mask = [1 if x in valid_actions else 0 for x in range(self.action_space.n)]
@@ -396,6 +393,8 @@ class BinPacking2DMaskGymEnvironment(BinPackingGymEnvironment):#BinPackingNearAc
             xid += 1
         '''
         obs=self.bin_to_pic_encoder(state)
+        if self.record:
+            self.recording_obs.append(obs)
         if self.readytotrainwmmodel:    
             obs = {
             "action_mask": np.array(self.action_mask),
