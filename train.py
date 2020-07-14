@@ -320,7 +320,7 @@ def master():
 
     max_len = -1  # max time steps (-1 means ignore)
 
-    while True:
+    while True:#Wait, how do we stop this?
         while True:
             t += 1
 
@@ -464,7 +464,7 @@ if __name__ == "__main__":
     parser.add_argument('-o', '--optimizer', type=str, help='ses, pepg, openes, ga, cma.', default='pepg')
     parser.add_argument('--num_episode', type=int, default=16, help='num episodes per trial')
     parser.add_argument('--eval_steps', type=int, default=25, help='evaluate every eval_steps step')
-    parser.add_argument('-n', '--num_worker', type=int, default=64)
+    parser.add_argument('-n', '--num_worker', type=int, default=4)
     parser.add_argument('-t', '--num_worker_trial', type=int, help='trials per worker', default=1)
     parser.add_argument('--antithetic', type=int, default=1, help='set to 0 to disable antithetic sampling')
     parser.add_argument('--cap_time', type=int, default=0,

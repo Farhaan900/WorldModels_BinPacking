@@ -173,7 +173,7 @@ class Model:
             'mask': mask
         }
         # print("action", action, xp, mask, "END")
-        print(printable)
+        #print(printable)
 
         self.state = rnn_next_state(self.rnn, z, action, self.state)
 
@@ -235,7 +235,7 @@ def simulate(model, train_mode=False, render_mode=True, num_episode=5, seed=-1, 
         model.reset()
 
         obs = model.env.reset()
-
+        #print(obs)
         mask = obs['action_mask']
         obs = obs['real_obs']
         total_reward = 0.0
@@ -262,9 +262,10 @@ def simulate(model, train_mode=False, render_mode=True, num_episode=5, seed=-1, 
             recording_logvar.append(logvar)
             recording_action.append(action)
 
-            obs, reward, done, info = model.env.step(action) # TODO
+            obs, reward, done, info = model.env.step(action[0]) # TODO
+            #print("Accction: "+str(action))
             rewardPrint = "Reward " + str(reward)
-            print(rewardPrint)
+            #print(rewardPrint)
 
             mask = obs['action_mask']
             obs = obs['real_obs']
