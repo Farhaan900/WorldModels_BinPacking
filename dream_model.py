@@ -125,8 +125,8 @@ class Model:
         # action[1] = (action[1] + 1.0) / 2.0
         # action[2] = clip(action[2])
         # action = sigmoid(h)
-        print(np.mean(action))
-        print(action)
+        #print(np.mean(action))
+        #print(action)
 
         action_mean = np.mean(action)
         action_mean = action_mean * 62
@@ -137,7 +137,7 @@ class Model:
 
         # action = np.array([int(action[2])])
 
-        print("action", action)
+        #print("action", action)
         self.state = rnn_next_state(self.rnn, z, action, self.state)
 
         return action
@@ -194,7 +194,7 @@ def simulate(model, train_mode=False, render_mode=True, num_episode=5, seed=-1, 
         model.reset()
 
         z = model.env.reset()
-        print(z)
+        #print(z)
 
         for t in range(max_episode_length):
 

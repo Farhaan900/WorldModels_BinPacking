@@ -5,11 +5,12 @@ import gym
 import os
 import json
 
-from scipy.misc import imresize as resize
-from scipy.misc import toimage as toimage
+#from scipy.misc import imresize as resize
+#from scipy.misc import toimage as toimage
 from gym.spaces.box import Box
 from gym.utils import seeding
 from bin_packing_environment import BinPackingGymEnvironment, BinPackingActionMaskGymEnvironment
+import rendering
 
 SCREEN_X = 64
 SCREEN_Y = 64
@@ -33,22 +34,25 @@ def get_pi_idx(x, pdf):
     return -1
 
 
-class CarRacingDream(gym.Env):
+class BinPackingDream(gym.Env):
     metadata = {
         'render.modes': ['human', 'rgb_array'],
         'video.frames_per_second': 60
     }
 
     def __init__(self, agent):
-        self.observation_space = Box(low=-50., high=50., shape=(32))  # , dtype=np.float32
+        self.observation_space = Box(low=np.array([0., 0., 0.]), high=np.array([255., 255., 255.]),  dtype=np.uint8)
         self._seed()
         self.agent = agent
         self.vae = agent.vae
+
         self.rnn = agent.rnn
+
         self.z_size = self.rnn.hps.output_seq_width
         self.viewer = None
         self.frame_count = None
         self.z = None
+        self.should_render=True
         self.temperature = 0.7
         self.vae_frame = None
         self._reset()
@@ -60,6 +64,9 @@ class CarRacingDream(gym.Env):
     def _sample_z(self, mu, logvar):
         z = mu + np.exp(logvar / 2.0) * self.np_random.randn(*logvar.shape)
         return z
+
+    def reset(self):
+        return self._reset()
 
     def _reset(self):
         idx = self.np_random.randint(0, len(initial_mu_logvar))
@@ -84,7 +91,7 @@ class CarRacingDream(gym.Env):
 
         strokes = np.zeros((1, OUTWIDTH), dtype=np.float32)
 
-        input_x = np.concatenate((prev_x, action.reshape(1, 1, 3)), axis=2)
+        input_x = np.concatenate((prev_x, action.reshape(1, 1, 1)), axis=2)
         feed = {s_model.input_x: input_x, s_model.initial_state: self.agent.state}
         [logmix, mean, logstd, self.agent.state] = sess.run(
             [s_model.out_logmix, s_model.out_mean, s_model.out_logstd, s_model.final_state], feed)
@@ -111,6 +118,9 @@ class CarRacingDream(gym.Env):
 
         return next_z
 
+    def step(self, action):
+        return self._step(action)
+
     def _step(self, action):
         self.frame_count += 1
         next_z = self._sample_next_z(action)
@@ -128,7 +138,7 @@ class CarRacingDream(gym.Env):
         img = img.reshape(64, 64, 3)
         return img
 
-    def _render(self, mode='human', close=False):
+    """def _render(self, mode='human', close=False):
 
         img = self.decode_obs(self.z)
 
@@ -152,24 +162,39 @@ class CarRacingDream(gym.Env):
             if self.viewer is None:
                 self.viewer = rendering.SimpleImageViewer()
             self.viewer.imshow(img)
+    """
+    def render(self, mode='human', close=False):
+        return self._render(mode, close)
 
+    def _render(self, mode='human', close=False):
+        if self.should_render:
+            if close:
+                if self.viewer is not None:
+                    self.viewer.close()
+                    self.viewer = None
+                return
+            screen_width = 1200
+            screen_height = 800
+            if self.viewer is None:  # This only happens in the first run
+                self.viewer = rendering.SimpleImageViewer(maxwidth=800)
+            vis= self.decode_obs(self.z)
+            #vis = Image.fromarray(vis.astype('uint8'), 'RGB')
+            #vis = vis.resize((1200,800), Image.ANTIALIAS)
+#vis.save('image.png')
+            #vis = rendering.Image('image.png', 0, 0)
+            #self.viewer.add_geom(vis)
+            return self.viewer.imshow(vis.astype('uint8'))#return_rgb_array=mode == 'rgb_array')
+        pass
+
+    def close(self):
+        if self.viewer:
+            self.viewer.close()
+            self.viewer = None
 
 def make_env(env_name, agent, seed=-1, render_mode=False):
-    # env = CarRacingDream(agent)
-    # if seed <0:
-    #   seed = np.random.randint(2**31-1)
-    # env.seed(seed)
-    #
-    # return env
-    env_config = {
-        "bag_capacity": 63,
-        'item_sizes': [1, 2, 3, 4, 5, 6, 7, 8, 9],
-        # 'item_probabilities': [0.14, 0.10, 0.06, 0.13, 0.11, 0.13, 0.03, 0.11, 0.19], #bounded waste
-        'item_probabilities': [0.06, 0.11, 0.11, 0.22, 0, 0.11, 0.06, 0, 0.33],  # perfect pack
-        #                  'item_probabilities': [0, 0, 0, 1/3, 0, 0, 0, 0, 2/3], #linear waste
-        'time_horizon': 1000,  # 10000
-    }
+  env = BinPackingDream(agent)
+  if seed <0:
+    seed = np.random.randint(2**31-1)
+  env.seed(seed)
 
-    env = BinPackingActionMaskGymEnvironment(env_config)
-
-    return env
+  return env
