@@ -17,6 +17,7 @@ import random
 import os
 from PIL import Image
 import rendering
+import time
 class BinPackingGymEnvironment(gym.Env):
 
     def __init__(self, env_config={}):
@@ -25,6 +26,9 @@ class BinPackingGymEnvironment(gym.Env):
         'render.modes': ['human', 'rgb_array'],
         }
         self.viewer = None
+        self.add_sleep_time=False
+        self.min_sleep=1
+        self.max_sleep=3
         self.should_render=False
         self.readytotrainwmmodel=True
         if self.record:
@@ -544,6 +548,8 @@ class BinPackingActionMaskGymEnvironment(BinPackingNearActionGymEnvironment):
         return obs
 
     def step(self, action):
+        if add_sleep_time:
+            time.sleep(np.random.uniform(self.min_sleep,self.max_sleep))
         state, rew, done, info = super().step(action)
         valid_actions = self.__get_valid_actions()
         self.action_mask = [1 if x in valid_actions else 0 for x in range(self.action_space.n)]
