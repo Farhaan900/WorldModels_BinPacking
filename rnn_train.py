@@ -37,12 +37,12 @@ def random_batch():
 
 
 def default_hps():
-    return HyperParams(num_steps=100,#Was 4k<- Change: 1/5
+    return HyperParams(num_steps=4000,
                        max_seq_len=999,  # train on sequences of 1000 (so 999 + teacher forcing shift)
                        input_seq_width=33,  # width of our data (32 + 3 actions)
                        output_seq_width=32,  # width of our data is 32
                        rnn_size=256,  # number of rnn cells
-                       batch_size=21,  # minibatch sizes.. Was 100 <- Change: 2/5
+                       batch_size=100,  # minibatch sizes.. 
                        grad_clip=1.0,
                        num_mixture=5,  # number of mixtures in MDN
                        learning_rate=0.001,
@@ -73,8 +73,8 @@ N_data = len(data_mu)  # should be 10k<- Change: 3/5
 batch_size = hps_model.batch_size
 
 # save 10 initial mu and logvars:#Could have been 1000 x 10000 <- Change: 4/5 (the two following statements)
-initial_mu = np.copy(data_mu[:10, 0, :] * 1000).astype(np.int).tolist()
-initial_logvar = np.copy(data_logvar[:10, 0, :] * 1000).astype(np.int).tolist()
+initial_mu = np.copy(data_mu[:1000, 0, :] * 1000).astype(np.int).tolist()
+initial_logvar = np.copy(data_logvar[:1000, 0, :] * 1000).astype(np.int).tolist()
 with open(os.path.join("tf_initial_z", "initial_z.json"), 'wt') as outfile:
     json.dump([initial_mu, initial_logvar], outfile, sort_keys=True, indent=0, separators=(',', ': '))
 
@@ -102,7 +102,6 @@ for local_step in range(hps.num_steps):
     # raw_a = np.array(new_list)
     # print(raw_a)
     # print(raw_a[:, 1:, :])
-    raw_a=np.reshape(raw_a,(21,1000,1))#To fix...<- Change: 5/5 (should be removed)
     inputs = np.concatenate((raw_z[:, :-1, :], raw_a[:, :-1, :]), axis=2)
     outputs = raw_z[:, 1:, :]  # teacher forcing (shift by one predictions)
 
