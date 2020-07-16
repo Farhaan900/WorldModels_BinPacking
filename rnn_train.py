@@ -90,16 +90,17 @@ for local_step in range(hps.num_steps):
     curr_learning_rate = (hps.learning_rate - hps.min_learning_rate) * (hps.decay_rate) ** step + hps.min_learning_rate
 
     raw_z, raw_a = random_batch()
-    # print(raw_z)
+    # print(np.shape(raw_z))
     # print("xxxxxxxxxxxxxxxxxxxxxxxxx")
     # FIND ME
-    # new_list = []
+    new_list = []
     # print(raw_a)
-    # for raw_x_t in raw_a:
-    #     appendable = [[raw_y_t] for raw_y_t in raw_x_t]
+    for raw_x_t in raw_a:
+        appendable = [[raw_y_t] for raw_y_t in raw_x_t]
         # print(appendable)
-        # new_list.append(appendable)
-    # raw_a = np.array(new_list)
+        new_list.append(appendable)
+    raw_a = np.array(new_list)
+    # print(np.shape(raw_a))
     # print(raw_a)
     # print(raw_a[:, 1:, :])
     inputs = np.concatenate((raw_z[:, :-1, :], raw_a[:, :-1, :]), axis=2)
