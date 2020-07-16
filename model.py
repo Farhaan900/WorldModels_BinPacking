@@ -173,7 +173,7 @@ class Model:
             'mask': mask
         }
         # print("action", action, xp, mask, "END")
-        #print(printable)
+        print(printable)
 
         self.state = rnn_next_state(self.rnn, z, action, self.state)
 
@@ -270,7 +270,7 @@ def simulate(model, train_mode=False, render_mode=True, num_episode=5, seed=-1, 
             recording_mu.append(mu)
             recording_logvar.append(logvar)
             recording_action.append(action)
-
+            print(action)
             obs, reward, done, info = model.env.step(action[0]) # TODO
             #print("Accction: "+str(action))
             rewardPrint = "Reward " + str(reward)
